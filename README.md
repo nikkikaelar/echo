@@ -1,117 +1,65 @@
-﻿# Pi Sentinel Net — Raspberry Pi Network Sensor with Local Dashboard
+# Sentinel  E2E Secure Messenger (MVP)
 
-**Purpose:** Educational/home‑lab network visibility with privacy‑respecting defaults.
+![](https://i.imgur.com/zsLK6Fh.png)
 
-## Features
-- Passive LAN metadata capture: **ARP, DHCP, DNS, mDNS** (no payload storage)
-- Local SQLite storage + REST API + WebSocket live updates
-- React/Vite dashboard: stats, timeline, recent events table
-- Optional (disabled): 802.11 probe sniffer (monitor mode only; check legality)
-- Systemd units for auto‑start on Pi; Docker Compose option
+Minimal endtoend encrypted chat for educational use. Two browser clients exchange public keys (manual/QR), derive a shared key via X25519, and encrypt messages with XChaCha20Poly1305. A dumb WebSocket relay forwards opaque ciphertextno plaintext or keys touch the server.
 
-## Quickstart (bare metal on Raspberry Pi)
-```bash
-# 1) Update and install deps
-sudo apt update && sudo apt install -y python3-pip python3-venv libpcap0.8 git
+> **NOT FOR PRODUCTION.** This is a learning artifact to show correct primitives and a documented threat model.
 
-# 2) Clone repo
-git clone https://github.com/YOUR_USER/pi-sentinel-net.git
-cd pi-sentinel-net
+## TL;DR
+- Client: React + libsodiumwrappers
+- Crypto: X25519 (ECDH)  BLAKE2b KDF  XChaCha20Poly1305 AEAD
+- Server: Node `ws` relay (no storage)
 
-# 3) Configure env
-cp env.example .env
-# edit .env to set interface (e.g. eth0 or wlan0), bind host/port, retention days
+## Quickstart
+1. **Server**
+   ```bash
+   cd server
+   npm i
+   npm run dev
+   # listens on ws://localhost:8787
+   ```
+2. **App**
+   ```bash
+   cd ../app
+   npm i
+   npm run dev
+   # open the printed local URL (e.g. http://localhost:5173)
+   ```
+3. Open **two** browser windows/tabs. Copy each tabs **User ID** and **Public Key** to the other. Set the other party as the recipient, type, send.
 
-# 4) Install backend + sniffer
-cd backend
-python3 -m venv .venv && source .venv/bin/activate
-pip install -U pip wheel
-pip install -r requirements.txt
+## How it works
+- On first load, the client generates an X25519 keypair and stores it in `localStorage`.
+- You paste your peers public key to establish a shared key (ECDH  BLAKE2b KDF, contexttagged).
+- Messages are sealed with `XChaCha20Poly1305` (nonce + ciphertext), base64wrapped, and relayed via WebSocket to the recipient ID.
+- The relay performs no crypto and cannot decrypt (but sees metadata like sender/recipient IDs and timing).
 
-# 5) Start sniffer (needs sudo for pcap)
-sudo -E env "PATH=$PATH" "PYTHONPATH=$(pwd)" \
-  ./sniffer/run_sniffer.sh &
+## Threat model (v0)
+**Assumptions**
+- Keys are generated with a trusted libsodium RNG in a noncompromised browser.
+- Public keys are verified outofband (paste/QR). No automatic trust on first use.
 
-# 6) Start API/dashboard
-uvicorn app.main:app --host 0.0.0.0 --port 8088 --reload
-# open http://<pi-ip>:8088 in your browser
-```
+**What this defends**
+- Passive network observers (plaintext is never transmitted).
+- Relay compromise w.r.t. message contents (ciphertext only).
 
-> **Tip:** Use the provided `provisioning/pi-*.service` files to run sniffer/API as systemd services on boot (see below).
+**What it does NOT defend**
+- **Metadata privacy** (relay sees IDs, timing, sizes).
+- **Endpoint compromise** (malware/extension can read keys/messages).
+- **Active MITM** during key exchange if you dont verify the peer key outofband.
+- **Forward secrecy across sessions** (v0 uses static longlived keys; rotate manually per session for PFS).
 
-## Optional: Docker Compose (on Pi OS / ARM)
-```bash
-# Requires Docker Engine on the Pi
-sudo apt install -y docker.io docker-compose-plugin
-sudo usermod -aG docker $USER && newgrp docker
-
-# Build and run
-docker compose up --build
-# API at http://<pi-ip>:8088, frontend served by backend static
-```
-
-## Directory Layout
-```
-pi-sentinel-net/
-├─ README.md
-├─ env.example
-├─ .gitignore
-├─ docker-compose.yml        # optional: run backend+frontend in containers on Pi
-├─ provisioning/
-│  ├─ install.sh             # setup script for bare-metal Pi (no Docker)
-│  ├─ pi-sentinel.service    # systemd unit for backend
-│  ├─ pi-sniffer.service     # systemd unit for packet sniffer
-├─ backend/
-│  ├─ requirements.txt
-│  ├─ Dockerfile
-│  ├─ app/
-│  │  ├─ main.py             # FastAPI app + WebSocket + static serving
-│  │  ├─ db.py               # SQLite schema + helpers
-│  │  ├─ models.py           # Pydantic models
-│  │  ├─ settings.py         # config via env vars
-│  │  └─ static/             # web build gets copied here on build
-│  └─ sniffer/
-│     ├─ sniffer.py          # scapy-based LAN metadata sniffer
-│     ├─ run_sniffer.sh      # wrapper script for sniffer
-│     └─ wifi_probe_optional.py # optional 802.11 probe sniffer (disabled by default)
-└─ frontend/
-   ├─ package.json
-   ├─ tsconfig.json
-   ├─ vite.config.ts
-   ├─ index.html
-   └─ src/
-      ├─ main.tsx
-      ├─ App.tsx
-      ├─ api.ts              # client for REST + WebSocket
-      ├─ components/
-      │  ├─ StatCards.tsx
-      │  ├─ EventsTable.tsx
-      │  └─ TimelineChart.tsx
-      └─ styles.css
-```
-
-## Legal & Ethical Notes
-- Run only on networks you own/control or with **explicit** permission.
-- Default filters exclude payloads; do not extend to intercept sensitive content.
-- Comply with local laws, ISP/Org policies, and wiretap regulations.
-- 802.11 monitor mode may be illegal/restricted; it is **opt‑in** and **off by default**.
-
-## Privacy Defaults
-- Store only timestamp, protocol, IP/MAC, and tiny event context (e.g., DNS qname).
-- No packet payloads or streams are retained.
-- Retention window is configurable via `PSN_RETENTION_DAYS` (documented cleanup via cron/SQL).
-
-## Threat Model (v0)
-- Sensor can be tampered by local admin; not hardened against a local attacker.
-- No authentication on local API (intended for trusted LAN). Put behind a firewall if needed.
-- Do not expose the dashboard to the internet.
+## Legal & ethical use
+- Educational/lab use on systems you control.
+- You are responsible for **complying with local laws on cryptography and export controls**.
+- Do not use to conceal illegal activity or violate organizational policies.
+- No warranty; security is not guaranteed.
 
 ## Roadmap
-- Auth (HTTP basic/token) for API
-- Per‑device inventory with friendly names (DHCP hostname)
-- Prometheus metrics and Grafana integration
-- Proper retention job (scheduled DELETE + VACUUM)
-- MQTT/Redis for event bus instead of file tail
+- Ephemeral session keys (X25519 ephemeral + rekey per conversation) for PFS.
+- Minimal deniability & doubleratchet.
+- Message authentication with sender identity keys.
+- Envelope versioning, attachments, and offline queueing.
 
 ## License
-MIT
+MIT (see `LICENSE`).
