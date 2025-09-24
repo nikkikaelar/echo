@@ -4,6 +4,8 @@
 
 Minimal endtoend encrypted chat for educational use. Two browser clients exchange public keys (manual/QR), derive a shared key via X25519, and encrypt messages with XChaCha20Poly1305. A dumb WebSocket relay forwards opaque ciphertextno plaintext or keys touch the server.
 
+TL;DR: This is a simple TypeScript project for a basic chat app that uses end‑to‑end encryption, meaning only the people sending and receiving a message can read it. Your device turns the message into coded text using a key before sending, and the server just passes along that unreadable text; the other person’s device uses its key to turn it back into the original message. It’s meant for learning, not for serious secure communication.
+
 > **NOT FOR PRODUCTION.** This is a learning artifact to show correct primitives and a documented threat model.
 
 ## TL;DR
