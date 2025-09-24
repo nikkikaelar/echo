@@ -1,0 +1,20 @@
+{
+  "name": "sentinel-relay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/relay.ts",
+    "build": "tsc -p .",
+    "start": "node dist/relay.js"
+  },
+  "dependencies": {
+    "nanoid": "^5.0.7",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.10",
+    "tsx": "^4.19.0",
+    "typescript": "^5.4.5"
+  }
+}

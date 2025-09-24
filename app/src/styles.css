@@ -1,0 +1,27 @@
+/* STYLECARD aesthetic: DOT-MATRIX / MONO / MINIMAL */
+:root { --rule: #d0d0d0; --ink: #111; --muted: #666; --bg: #fff; }
+html, body, #root { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.frame { max-width: 960px; margin: 40px auto; padding: 16px 20px; }
+.rule { border-top: 1px solid var(--rule); margin: 8px 0; }
+.title { letter-spacing: 0.5px; font-weight: 700; font-size: 18px; text-transform: uppercase; }
+.subtitle { color: var(--muted); font-size: 12px; margin: 8px 0 16px; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.box { border: 1px solid var(--rule); padding: 12px; border-radius: 4px; }
+.box h3 { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.4px; text-transform: uppercase; }
+
+label { display: block; font-size: 12px; margin: 8px 0 6px; }
+input, textarea, button { font-family: inherit; font-size: 14px; }
+input, textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--rule); border-radius: 4px; padding: 8px 10px; background: #fafafa; }
+textarea { min-height: 84px; }
+
+.actions { margin-top: 8px; }
+button { border: 1px solid var(--rule); background: #f4f4f4; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+button:hover { background: #eee; }
+
+.log { font-size: 12px; white-space: pre-wrap; border: 1px solid var(--rule); padding: 12px; border-radius: 4px; min-height: 160px; }
+
+@media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+
