@@ -1,4 +1,4 @@
-﻿# Sentinel  E2E Secure Messenger (MVP)
+# Sentinel  E2E Secure Messenger (MVP)
 
 ![](https://i.imgur.com/zsLK6Fh.png)
 
