@@ -13,9 +13,9 @@ export async function generateKeypair(): Promise<Keypair> {
 
 export async function deriveSharedKey(mySecret: Uint8Array, theirPublic: Uint8Array): Promise<Uint8Array> {
   const s = await sodium();
-  const shared = s.crypto_scalarmult(mySecret, theirPublic); // X25519 ECDH
-  // Context-tagged KDF using BLAKE2b as a stand-in for HKDF for the MVP
-  const ctx = s.from_string('sentinel-v1');
+  // X25519 ECDH → BLAKE2b(32) with a fixed context tag
+  const shared = s.crypto_scalarmult(mySecret, theirPublic); // 32 bytes
+  const ctx = s.from_string("echo/v1/kdf");
   return s.crypto_generichash(32, shared, ctx);
 }
 

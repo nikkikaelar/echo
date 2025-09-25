@@ -1,0 +1,16 @@
+{
+  "name": "echo",
+  "private": true,
+  "workspaces": ["app", "server"],
+  "engines": { "node": ">=20.10 <21" },
+  "scripts": {
+    "dev": "concurrently -n app,server -c auto \"npm --workspace app run dev\" \"npm --workspace server run dev\"",
+    "build": "npm -ws run build",
+    "typecheck": "npm -ws run typecheck || true",
+    "lint": "npm -ws run lint || true",
+    "format": "npm -ws run format || true"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}

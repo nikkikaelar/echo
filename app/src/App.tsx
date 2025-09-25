@@ -72,12 +72,16 @@ export default function App() {
   async function send() {
     if (!peerId) { setLog((L) => ['[ui] set recipient ID', ...L]); return; }
     if (!sharedKeyRef.current) { setLog((L) => ['[ui] set valid peer public key', ...L]); return; }
-    const pt = await utf8(message);
-    const sealed = await seal(pt, sharedKeyRef.current);
-    const b64 = await toB64(sealed);
-    ws.send(peerId.trim(), b64);
-    setLog((L) => [`[to ${peerId}] ${message}`, ...L]);
-    setMessage('');
+    try {
+      const pt = await utf8(message);
+      const payload = await seal(pt, sharedKeyRef.current);
+      const b64 = await toB64(payload);
+      ws.send(peerId, b64);
+      setLog((L) => [`[to ${peerId}] ${message}`, ...L]);
+      setMessage('');
+    } catch {
+      setLog((L) => ['[ui] send failed', ...L]);
+    }
   }
 
   return (
@@ -107,7 +111,7 @@ export default function App() {
 
       <section style={{ marginTop: 16 }}>
         <label>Message</label>
-        <textarea value={message} onChange={(e) => setMessage(e.target.value)} />
+        <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message…" />
         <div className="actions">
           <button onClick={send}>Send</button>
         </div>
